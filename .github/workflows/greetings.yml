@@ -1,27 +1,33 @@
-image: Ubuntu1804  # образ для сборки
+name: Deploy
 
-stack: node 16  # окружение
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
-branches:
-  only:
-    - main  # ветка git
+permissions:
+  checks: write
+  contents: write
+  pages: write
+  id-token: write
+  deployments: write
 
-cache: node_modules  # кеширование
-
-install:
-  - npm install  # команда установки зависимостей
-
-build: off  # отключаем встроенную в appveyor систему сборки
-
-build_script:
-  - npm run build   # команда сборки
-
-test_script:
-  - npm run lint  # скрипт тестирования
-
-deploy_script:  # скрипт развёртывания
-  - git config --global credential.helper store
-  - git config --global user.name AppVeyor
-  - git config --global user.email ci@appveyor.com
-  - echo "https://$GITHUB_TOKEN:x-oauth-basic@github.com" > "$HOME/.git-credentials"
-  - npx push-dir --dir=dist --branch=gh-pages --force --verbose
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.x'
+      - name: Install dependencies
+        run: npm install
+      - name: Build project
+        run: npm run build
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          publish_dir: ./dist
+          force_orphan: true
